@@ -26,7 +26,7 @@ else:
 
 # Database Configuration
 # Expects DATABASE_URL to be set in the environment (Render provides this for linked DBs)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('postgresql://leaguedb_user:qNcmn4yYXfS3OvoJ4HwgEb6zGGVhUs5V@dpg-d0idtt95pdvs7384av40-a/leaguedb')
 if not app.config['SQLALCHEMY_DATABASE_URI']:
     print("WARNING: DATABASE_URL environment variable not set. Defaulting to local SQLite (league_data.db).")
     # Fallback to a local SQLite database file for development if DATABASE_URL is not set
