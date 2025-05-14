@@ -13,12 +13,12 @@ app = Flask(__name__)
 # Example for local SQLite (easier to start with locally):
 # app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///league_data.db'
 # For Render (it will inject DATABASE_URL):
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///local_dev_league_data.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'postgresql://leaguedb_user:qNcmn4yYXfS3OvoJ4HwgEb6zGGVhUs5V@dpg-cmdidtt95pdvs7384av40-a/leaguedb')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False # Recommended
 
 # --- Secret Key ---
-app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'super_secret_dev_key_change_me')
-if app.secret_key == 'super_secret_dev_key_change_me' and app.env == 'production':
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', '')
+if app.secret_key == 'f3a8c2e5b7d9a1c0b8e4f7a2d1c0e9f6a3b7d8c1e5f0a2b9d4c7e1f3a0b8d6c2' and app.env == 'production':
     # print("WARNING: Using default FLASK_SECRET_KEY in production!", file=sys.stderr) # Requires import sys
     pass
 
