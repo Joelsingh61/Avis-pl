@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Scores - {{ season }} - Football League Manager</title>
+    <!-- Google Fonts for a rustic feel -->
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- General Reset & Base Styles --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Lato', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #f4f1ea; /* Aged paper / light beige */
+            color: #3D2B1F; /* Dark Bistre - a rustic brown for text */
+            line-height: 1.6;
+            font-size: 16px;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex; /* For footer positioning */
+            flex-direction: column; /* For footer positioning */
+            align-items: center; /* Center the container */
+        }
+
+        .container {
+            width: 100%;
+            max-width: 850px; /* Adjusted width for table with inputs */
+            margin: 20px auto;
+            background-color: #fffdf5; /* Very light cream */
+            padding: 25px 30px;
+            border-radius: 10px;
+            box-shadow: 0 8px 25px rgba(80, 50, 20, 0.15);
+            border: 1px solid #e0d8c8;
+        }
+
+        /* --- Typography --- */
+        .page-title {
+            font-family: 'Merriweather', Georgia, 'Times New Roman', Times, serif;
+            color: #5A3A22; /* Darker, richer brown for headings */
+            font-size: 2.2em;
+            margin-bottom: 1em;
+            text-align: center;
+            line-height: 1.3;
+        }
+        .page-title .season-name {
+            color: #8B4513; /* SaddleBrown for emphasis on season name */
+        }
+
+        a {
+            color: #7B5B3A; /* Muted Sienna Brown for links */
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.2s ease-in-out;
+        }
+
+        a:hover, a:focus {
+            color: #8B0000; /* Maroon - for hover */
+            text-decoration: underline;
+        }
+
+        /* --- Update Scores Table Styling --- */
+        .scores-table-wrapper {
+            overflow-x: auto; /* Allows horizontal scrolling on small screens */
+            margin-top: 20px;
+            margin-bottom: 25px;
+        }
+
+        .scores-table {
+            width: 100%;
+            border-collapse: collapse; /* Clean borders */
+        }
+
+        .scores-table th,
+        .scores-table td {
+            padding: 10px 12px; /* Slightly reduced padding for inputs */
+            text-align: center; /* Center align all table content */
+            border: 1px solid #D2B48C; /* Tan border, like parchment lines */
+        }
+
+        .scores-table th {
+            background-color: #D2B48C; /* Tan for header */
+            color: #4A3B31; /* Dark Taupe for header text */
+            font-family: 'Merriweather', serif;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-top: 2px solid #8B4513; /* SaddleBrown top border */
+            border-bottom-width: 2px; /* Thicker bottom border */
+        }
+        
+        .scores-table td {
+            vertical-align: middle; /* Ensure content aligns nicely with inputs */
+        }
+
+        .scores-table td.team-name {
+            font-weight: bold;
+            color: #5A3A22; /* Slightly richer color for team names */
+            text-align: left; /* Left align team names for readability */
+             min-width: 120px; /* Ensure team names have some space */
+        }
+
+        .scores-table input[type="number"] {
+            width: 70px; /* Fixed width for score inputs */
+            padding: 10px;
+            border: 1px solid #C1A97E;
+            border-radius: 4px;
+            background-color: #FCF8F0;
+            font-family: 'Lato', sans-serif;
+            font-size: 1em;
+            color: #3D2B1F;
+            text-align: center;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            -moz-appearance: textfield; /* Remove spinners in Firefox */
+        }
+        .scores-table input[type="number"]::-webkit-outer-spin-button,
+        .scores-table input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none; /* Remove spinners in Chrome/Safari */
+            margin: 0;
+        }
+
+        .scores-table input[type="number"]:focus {
+            outline: none;
+            border-color: #8B4513;
+            box-shadow: 0 0 0 3px rgba(139, 69, 19, 0.15);
+        }
+
+        /* --- Buttons Styling --- */
+        .button-primary {
+            display: block; /* Make it a block to center easily if needed */
+            width: 100%;
+            max-width: 250px; /* Max width for the submit button */
+            margin: 0 auto 20px auto; /* Center the button */
+            background-color: #556B2F; /* DarkOliveGreen */
+            color: white !important;
+            padding: 14px 25px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Lato', sans-serif;
+            font-size: 1.1em;
+            font-weight: bold;
+            text-decoration: none;
+            text-align: center;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            border-bottom: 3px solid #3A4A1F;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .button-primary:hover {
+            background-color: #6B8E23; /* OliveDrab */
+            transform: translateY(-2px);
+        }
+
+
+        /* --- Navigation Links --- */
+        .navigation-links {
+            text-align: center;
+            margin-top: 15px;
+            margin-bottom: 10px;
+        }
+        .nav-button {
+            display: inline-block;
+            background-color: #7B5B3A; /* Muted Sienna Brown */
+            color: white !important;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-family: 'Lato', sans-serif;
+            font-size: 1em;
+            font-weight: bold;
+            text-decoration: none;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            border-bottom: 2px solid #5A3A22; /* Darker shade for depth */
+            margin: 0 5px; /* Space between nav buttons */
+        }
+        .nav-button:hover {
+            background-color: #8B4513; /* SaddleBrown */
+            transform: translateY(-2px);
+        }
+
+        /* --- Footer --- */
+        .site-footer {
+            text-align: center;
+            padding: 1.5em 0;
+            margin-top: auto; /* Pushes footer to bottom */
+            width: 100%; /* Make footer span full width */
+            background-color: #4A3B31; /* Dark Taupe */
+            color: #f4f1ea; /* Light text */
+            font-size: 0.9em;
+            border-top: 3px solid #8B4513; /* SaddleBrown */
+        }
+        .site-footer p {
+            margin: 0;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="page-title">Update Scores - <span class="season-name">{{ season }}</span></h1>
+        
+        <form method="POST">
+            <div class="scores-table-wrapper">
+                <table class="scores-table">
+                    <thead>
+                        <tr>
+                            <th>Home Team</th>
+                            <th>Away Team</th>
+                            <th>Home Goals</th>
+                            <th>Away Goals</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for fixture in fixtures %}
+                        <tr>
+                            <td class="team-name">{{ fixture[0] }}</td>
+                            <td class="team-name">{{ fixture[1] }}</td>
+                            <td>
+                                <input type="number" name="home_goals_{{ loop.index0 }}" 
+                                       value="{{ '' if fixture[2] == '-' else fixture[2] }}"
+                                       min="0" placeholder="-" aria-label="Home goals for {{ fixture[0] }}">
+                            </td>
+                            <td>
+                                <input type="number" name="away_goals_{{ loop.index0 }}" 
+                                       value="{{ '' if fixture[3] == '-' else fixture[3] }}"
+                                       min="0" placeholder="-" aria-label="Away goals for {{ fixture[1] }}">
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <button type="submit" class="button-primary">Update All Scores</button>
+        </form>
+
+        <div class="navigation-links">
+            <a href="{{ url_for('points_table', season=season) }}" class="nav-button">Back to Points Table</a>
+            <a href="{{ url_for('index') }}" class="nav-button">Back to Seasons List</a>
+        </div>
+    </div>
+
+    <footer class="site-footer">
+        <p>&copy;  2026 AVIS Premier league.</p>
+    </footer>
+
+</body>
+</html>
+

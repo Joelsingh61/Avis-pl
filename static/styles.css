@@ -1,0 +1,212 @@
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Lato', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background-color: #f4f1ea; /* Aged paper / light beige */
+    color: #3D2B1F; /* Dark Bistre - a rustic brown for text */
+    line-height: 1.7;
+    font-size: 16px;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.container {
+    width: 90%;
+    max-width: 1100px; /* Max width for content */
+    margin: 0 auto;
+    padding: 0 15px;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Merriweather', Georgia, 'Times New Roman', Times, serif;
+    color: #5A3A22; /* Darker, richer brown for headings */
+    margin-top: 1.2em;
+    margin-bottom: 0.6em;
+    line-height: 1.3;
+}
+
+.site-title { /* Used in header */
+    font-size: 1.8em;
+    margin: 0;
+    color: #4A3B31; /* Dark Taupe */
+}
+
+.page-title { /* For main H2 on pages */
+    font-size: 2.4em;
+    text-align: center;
+    margin-bottom: 1em;
+    color: #6a4a3a; /* A slightly warmer, more prominent heading color */
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.1);
+}
+
+a {
+    color: #7B5B3A; /* Muted Sienna Brown for links */
+    text-decoration: none;
+    transition: color 0.2s ease-in-out;
+}
+
+a:hover, a:focus {
+    color: #8B0000; /* Maroon - for hover, a classic, strong color */
+    text-decoration: underline;
+}
+
+ul {
+    list-style: none;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+hr.divider {
+    border: 0;
+    height: 1px;
+    background: #D2B48C; /* Tan color like header */
+    margin: 2em 0;
+}
+
+/* --- Header & Navigation --- */
+.site-header {
+    background-color: #D2B48C; /* Tan - a classic rustic color */
+    padding: 1em 0;
+    border-bottom: 4px solid #8B4513; /* SaddleBrown - for a sturdy border */
+    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo-link, .logo-link:hover {
+    text-decoration: none;
+}
+
+.main-navigation ul {
+    display: flex;
+    align-items: center;
+}
+
+.main-navigation ul li {
+    margin-left: 20px;
+}
+
+.main-navigation ul li a {
+    text-decoration: none;
+    font-weight: bold;
+    color: #4A3B31; /* Dark Taupe */
+    padding: 10px 15px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    text-transform: uppercase;
+    font-size: 0.9em;
+    letter-spacing: 0.5px;
+}
+
+.main-navigation ul li a:hover,
+.main-navigation ul li a.active { /* Add .active class for current page if desired */
+    background-color: #8B4513; /* SaddleBrown */
+    color: #fffaf0; /* FloralWhite - for good contrast */
+    text-decoration: none;
+}
+
+
+/* --- Main Content Area --- */
+.main-content {
+    flex-grow: 1; /* Ensures footer is pushed to bottom */
+    padding: 30px 0;
+}
+
+.main-content .container {
+    background-color: #fffdf5; /* Very light cream, softer than pure white */
+    padding: 25px 30px;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(80, 50, 20, 0.1); /* Soft brown shadow */
+    border: 1px solid #e0d8c8; /* Subtle border */
+}
+
+
+/* --- Footer --- */
+.site-footer {
+    text-align: center;
+    padding: 1.5em 0;
+    margin-top: auto; /* Pushes footer to bottom if content is short */
+    background-color: #4A3B31; /* Dark Taupe, same as some nav text */
+    color: #f4f1ea; /* Light text for contrast on dark background */
+    font-size: 0.9em;
+    border-top: 3px solid #8B4513; /* SaddleBrown */
+}
+.site-footer p {
+    margin: 0;
+}
+
+
+/* --- Buttons --- */
+.button, button { /* General button styling */
+    display: inline-block;
+    background-color: #556B2F; /* DarkOliveGreen - rustic but distinct */
+    color: white !important; /* Ensure text is white */
+    padding: 12px 22px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: 'Lato', sans-serif;
+    font-size: 1em;
+    font-weight: bold;
+    text-decoration: none;
+    text-align: center;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    margin: 5px;
+    border-bottom: 3px solid #3A4A1F; /* Darker shade for depth */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.button:hover, button:hover {
+    background-color: #6B8E23; /* OliveDrab - lighter green on hover */
+    color: white !important;
+    text-decoration: none;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+}
+
+.button:active, button:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.button-secondary {
+    background-color: #A0522D; /* Sienna */
+    border-bottom-color: #703A1F;
+}
+.button-secondary:hover {
+    background-color: #B86134; /* Lighter Sienna */
+}
+
+/* Button for dangerous actions like Delete */
+.button-danger, button.delete-button {
+    background-color: #8B0000; /* Maroon */
+    border-bottom-color: #600000; /* Darker maroon */
+}
+.button-danger:hover, button.delete-button:hover {
+    background-color: #A52A2A; /* Brown (less intense red) */
+}
+
+/* --- Forms (Basic - will expand for specific forms) --- */
+form {
+    margin-bottom: 1.5em;
+}
+
+form.inline-form {
+    display: inline-block;
+    margin-bottom: 0;
+    margin-left: 5
+
+

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> AVIS PREMIER LEAGUE - Seasons</title>
+    <!-- Google Fonts for a rustic feel -->
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- General Reset & Base Styles --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Lato', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #f4f1ea; /* Aged paper / light beige */
+            color: #3D2B1F; /* Dark Bistre - a rustic brown for text */
+            line-height: 1.7;
+            font-size: 16px;
+            padding-bottom: 60px; /* Space for a potential fixed footer if added */
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 900px; /* Slightly narrower for focused content on index */
+            margin: 0 auto;
+            padding: 20px 15px;
+        }
+
+        /* --- Typography --- */
+        h1, h2, h3 { /* Site title, admin links title, seasons title */
+            font-family: 'Merriweather', Georgia, 'Times New Roman', Times, serif;
+            color: #5A3A22; /* Darker, richer brown for headings */
+            margin-top: 1.2em;
+            margin-bottom: 0.6em;
+            line-height: 1.3;
+            text-align: center;
+        }
+
+        .site-main-title { /* Specifically for "Football League Manager" */
+            font-size: 2.5em;
+            color: #4A3B31; /* Dark Taupe */
+            margin-top: 0.8em;
+            margin-bottom: 0.5em;
+            padding-bottom: 0.3em;
+            border-bottom: 2px solid #D2B48C; /* Tan underline */
+            display: inline-block; /* To make border-bottom fit content */
+        }
+
+        .page-subtitle { /* For "Seasons" and "Admin Controls" */
+            font-size: 1.8em;
+            color: #6a4a3a;
+            margin-top: 1.5em;
+            margin-bottom: 1em;
+        }
+
+        a {
+            color: #7B5B3A; /* Muted Sienna Brown for links */
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.2s ease-in-out;
+        }
+
+        a:hover, a:focus {
+            color: #8B0000; /* Maroon - for hover */
+            text-decoration: underline;
+        }
+
+        ul {
+            list-style: none;
+        }
+
+        /* --- Admin Navigation Section --- */
+        .admin-nav {
+            text-align: center;
+            margin-bottom: 2em;
+            padding: 15px;
+            background-color: #E8DCC9; /* Lighter tan, like old parchment */
+            border-radius: 6px;
+            border: 1px solid #C1A97E;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.07);
+        }
+
+        .admin-nav a {
+            margin: 0 10px;
+            padding: 8px 15px;
+            background-color: #7B5B3A;
+            color: #fffaf0; /* FloralWhite for good contrast */
+            border-radius: 4px;
+            text-decoration: none;
+            transition: background-color 0.2s ease;
+        }
+        .admin-nav a:hover {
+            background-color: #8B4513; /* SaddleBrown */
+            text-decoration: none;
+        }
+
+        /* --- Seasons List --- */
+        .seasons-list {
+            margin: 20px auto;
+            padding: 0;
+        }
+
+        .season-item {
+            background-color: #fffdf5; /* Very light cream */
+            border: 1px solid #e0d8c8; /* Subtle border */
+            padding: 25px 30px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(80, 50, 20, 0.1); /* Soft brown shadow */
+            transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+        }
+        .season-item:hover {
+            transform: translateY(-5px) scale(1.015);
+            box-shadow: 0 6px 15px rgba(80, 50, 20, 0.15);
+        }
+
+        .season-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap; /* Allow wrapping if name is long */
+        }
+
+        .season-item-name {
+            font-family: 'Merriweather', serif;
+            font-size: 1.7em;
+            color: #5A3A22;
+            margin:0; /* Resetting default margin from h3 */
+            flex-grow: 1;
+        }
+
+        .season-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px; /* Spacing between action links/buttons */
+            flex-wrap: wrap;
+            margin-top: 10px; /* Add space if actions wrap below name */
+        }
+
+        .season-actions a,
+        .season-actions button {
+            display: inline-block;
+            padding: 10px 18px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 0.95em;
+            font-weight: bold;
+            text-align: center;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            border: none;
+            margin: 3px 0; /* Margin for wrapped items */
+        }
+
+        .season-actions a { /* Default link styled as a button */
+            background-color: #A0522D; /* Sienna */
+            color: white !important;
+            border-bottom: 2px solid #703A1F;
+        }
+        .season-actions a:hover {
+            background-color: #B86134; /* Lighter Sienna */
+            text-decoration: none;
+            transform: translateY(-2px);
+        }
+
+        .season-actions button { /* Specifically for the delete button */
+            background-color: #8B0000; /* Maroon */
+            color: white !important;
+            border-bottom: 2px solid #600000; /* Darker maroon */
+        }
+        .season-actions button:hover {
+            background-color: #A52A2A; /* Brown (less intense red) */
+            text-decoration: none;
+            transform: translateY(-2px);
+        }
+        .season-actions form {
+            display: inline; /* Keep form from breaking flow */
+        }
+
+
+        .no-seasons-message {
+            text-align: center;
+            font-size: 1.1em;
+            padding: 25px;
+            color: #6c757d;
+            background-color: #fffdf5;
+            border: 1px dashed #e0d8c8;
+            border-radius: 8px;
+            margin-top: 2em;
+        }
+        .no-seasons-message a {
+            font-weight: bold;
+        }
+
+        /* Simple Footer */
+        .site-footer {
+            text-align: center;
+            padding: 1.5em 0;
+            margin-top: 3em;
+            background-color: #4A3B31; /* Dark Taupe */
+            color: #f4f1ea; /* Light text */
+            font-size: 0.9em;
+            border-top: 3px solid #8B4513; /* SaddleBrown */
+        }
+        .site-footer p {
+            margin: 0;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            .site-main-title {
+                font-size: 2em;
+            }
+            .page-subtitle {
+                font-size: 1.5em;
+            }
+            .season-item-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .season-item-name {
+                margin-bottom: 10px;
+            }
+            .season-actions {
+                width: 100%;
+                justify-content: flex-start;
+            }
+            .season-actions a, .season-actions button {
+                width: calc(50% - 5px); /* Two buttons per row, with gap */
+                margin-bottom: 10px;
+            }
+            .season-actions form {
+                 width: calc(50% - 5px);
+            }
+            .season-actions form button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header style="text-align:center;">
+            <h1 class="site-main-title">AVIS Premier League Manager</h1>
+        </header>
+
+        <nav class="admin-nav">
+            {% if session.admin %}
+                <a href="{{ url_for('create_season') }}">Create New Season</a>
+                <a href="{{ url_for('logout') }}">Logout (Admin)</a>
+            {% else %}
+                <a href="{{ url_for('login') }}">Admin Login</a>
+            {% endif %}
+        </nav>
+
+        <h2 class="page-subtitle">Available Seasons</h2>
+
+        {% if seasons %}
+            <ul class="seasons-list">
+                {% for season in seasons %}
+                    <li class="season-item">
+                        <div class="season-item-header">
+                            <h3 class="season-item-name">{{ season }}</h3>
+                        </div>
+                        <div class="season-actions">
+                            <a href="{{ url_for('points_table', season=season) }}">View Table</a>
+                            {% if session.admin %}
+                                <a href="{{ url_for('update_scores', season=season) }}">Update Scores</a>
+                                <form method="POST" action="{{ url_for('delete_season', season=season) }}" onsubmit="return confirm('Are you absolutely sure you want to delete season \'{{ season }}\'? This action cannot be undone.');">
+                                    <button type="submit">Delete Season</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="no-seasons-message">
+                No seasons have been created yet.
+                {% if session.admin %}
+                    <a href="{{ url_for('create_season') }}">Be the first to create one!</a>
+                {% else %}
+                    Please <a href="{{ url_for('login') }}">log in as an admin</a> to create a season.
+                {% endif %}
+            </p>
+        {% endif %}
+    </div>
+
+    <footer class="site-footer">
+        <div class="container">
+            <!-- Year hardcoded as we are not changing app.py -->
+            <p>&copy; 2026 AVIS Premier league</p>
+        </div>
+    </footer>
+
+</body>
+</html>

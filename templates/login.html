@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Football League Manager</title>
+    <!-- Google Fonts for a rustic feel -->
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- General Reset & Base Styles --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Lato', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #f4f1ea; /* Aged paper / light beige */
+            color: #3D2B1F; /* Dark Bistre - a rustic brown for text */
+            line-height: 1.6;
+            font-size: 16px;
+            display: flex;
+            flex-direction: column; /* For potential footer later */
+            align-items: center; /* Center login box horizontally */
+            justify-content: center; /* Center login box vertically */
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* --- Login Container --- */
+        .login-container {
+            background-color: #fffdf5; /* Very light cream, softer than pure white */
+            padding: 35px 40px;
+            border-radius: 10px;
+            box-shadow: 0 8px 25px rgba(80, 50, 20, 0.15); /* Softer brown shadow */
+            border: 1px solid #e0d8c8; /* Subtle border */
+            width: 100%;
+            max-width: 420px; /* Max width for the login box */
+            text-align: center;
+        }
+
+        /* --- Typography --- */
+        .login-title {
+            font-family: 'Merriweather', Georgia, 'Times New Roman', Times, serif;
+            color: #5A3A22; /* Darker, richer brown for headings */
+            font-size: 2.2em;
+            margin-bottom: 0.8em;
+            line-height: 1.3;
+        }
+
+        a {
+            color: #7B5B3A; /* Muted Sienna Brown for links */
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.2s ease-in-out;
+        }
+
+        a:hover, a:focus {
+            color: #8B0000; /* Maroon - for hover */
+            text-decoration: underline;
+        }
+
+        /* --- Form Styling --- */
+        .login-form {
+            margin-top: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left; /* Align labels and inputs to the left within the group */
+        }
+
+        .form-group label {
+            display: block;
+            font-family: 'Lato', sans-serif;
+            font-weight: bold;
+            color: #6a4a3a; /* A slightly warmer, more prominent heading color */
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="password"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #C1A97E; /* Darker tan border, like parchment edge */
+            border-radius: 5px;
+            background-color: #FCF8F0; /* Slightly off-white, keeps the rustic feel */
+            font-family: 'Lato', sans-serif;
+            font-size: 1em;
+            color: #3D2B1F;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.06);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .form-group input[type="text"]:focus,
+        .form-group input[type="password"]:focus {
+            outline: none;
+            border-color: #8B4513; /* SaddleBrown - more prominent on focus */
+            box-shadow: 0 0 0 3px rgba(139, 69, 19, 0.15); /* Soft glow */
+        }
+
+        .login-button {
+            display: inline-block;
+            background-color: #556B2F; /* DarkOliveGreen - rustic but distinct */
+            color: white !important;
+            padding: 14px 25px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Lato', sans-serif;
+            font-size: 1.1em;
+            font-weight: bold;
+            text-decoration: none;
+            text-align: center;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            margin-top: 10px; /* Space above button */
+            width: 100%; /* Make button full width of its container */
+            border-bottom: 3px solid #3A4A1F; /* Darker shade for depth */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .login-button:hover {
+            background-color: #6B8E23; /* OliveDrab - lighter green on hover */
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+        }
+        .login-button:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        /* Optional: Link back to home page */
+        .back-link {
+            margin-top: 25px;
+            font-size: 0.9em;
+        }
+        .back-link a {
+           color: #7B5B3A;
+        }
+        .back-link a:hover {
+            color: #8B0000;
+        }
+
+        /* Simple Footer (if desired, otherwise can be removed for login page) */
+        .site-footer {
+            text-align: center;
+            padding: 1em 0;
+            margin-top: auto; /* Pushes footer to bottom if content is short */
+            width:100%;
+            background-color: rgba(74, 59, 49, 0.05); /* Very subtle, almost transparent dark taupe */
+            color: #4A3B31;
+            font-size: 0.85em;
+            position: fixed; /* Or absolute, depending on desired behavior */
+            bottom: 0;
+        }
+        .site-footer p {
+            margin: 0;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h1 class="login-title">Admin Login</h1>
+        <form method="POST" action="{{ url_for('login') }}" class="login-form">
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <button type="submit" class="login-button">Login</button>
+        </form>
+        <p class="back-link">
+            <a href="{{ url_for('index') }}">Back to Seasons Overview</a>
+        </p>
+    </div>
+
+    <!-- You can keep or remove this footer. It's subtle for a login page. -->
+    <footer class="site-footer">
+        <p>&copy; 2024 Football League Manager</p>
+    </footer>
+
+</body>
+</html>

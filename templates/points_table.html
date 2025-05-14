@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ season }} - Points Table - Football League Manager</title>
+    <!-- Google Fonts for a rustic feel -->
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- General Reset & Base Styles --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Lato', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #f4f1ea; /* Aged paper / light beige */
+            color: #3D2B1F; /* Dark Bistre - a rustic brown for text */
+            line-height: 1.6;
+            font-size: 16px;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 95%;
+            max-width: 1000px; /* Allow more width for the table */
+            margin: 0 auto;
+            background-color: #fffdf5; /* Very light cream */
+            padding: 25px 30px;
+            border-radius: 10px;
+            box-shadow: 0 8px 25px rgba(80, 50, 20, 0.15);
+            border: 1px solid #e0d8c8;
+        }
+
+        /* --- Typography --- */
+        .page-title {
+            font-family: 'Merriweather', Georgia, 'Times New Roman', Times, serif;
+            color: #5A3A22; /* Darker, richer brown for headings */
+            font-size: 2.4em;
+            margin-bottom: 1em;
+            text-align: center;
+            line-height: 1.3;
+            text-shadow: 1px 1px 0px rgba(255,255,255,0.7); /* Subtle highlight */
+        }
+        .page-title .season-name {
+            color: #8B4513; /* SaddleBrown for emphasis on season name */
+        }
+
+        a {
+            color: #7B5B3A; /* Muted Sienna Brown for links */
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.2s ease-in-out;
+        }
+
+        a:hover, a:focus {
+            color: #8B0000; /* Maroon - for hover */
+            text-decoration: underline;
+        }
+
+        /* --- Points Table Styling --- */
+        .points-table-wrapper {
+            overflow-x: auto; /* Allows horizontal scrolling on small screens if table is wide */
+            margin-top: 20px;
+        }
+
+        .points-table {
+            width: 100%;
+            border-collapse: collapse; /* Clean, modern look for borders */
+            font-size: 0.95em;
+        }
+
+        .points-table th,
+        .points-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #D2B48C; /* Tan border, like parchment lines */
+        }
+
+        .points-table th {
+            background-color: #D2B48C; /* Tan - a classic rustic color for header */
+            color: #4A3B31; /* Dark Taupe for header text */
+            font-family: 'Merriweather', serif;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-top: 2px solid #8B4513; /* SaddleBrown top border for emphasis */
+            border-bottom-width: 2px; /* Thicker bottom border for header */
+        }
+
+        .points-table td {
+            color: #3D2B1F; /* Dark Bistre for table data */
+        }
+        
+        /* Center numeric columns for better readability */
+        .points-table th:not(:first-child), /* All th except the first (Team Name) */
+        .points-table td:not(:first-child) { /* All td except the first */
+            text-align: center;
+        }
+        .points-table td:first-child { /* Team name column */
+            font-weight: bold;
+            color: #5A3A22; /* Slightly richer color for team names */
+        }
+
+        /* Alternating row colors for readability (zebra striping) */
+        .points-table tbody tr:nth-child(even) {
+            background-color: #F0E9E0; /* A slightly darker shade of the 'aged paper' */
+        }
+        .points-table tbody tr:nth-child(odd) {
+            background-color: #fffdf5; /* The main content background */
+        }
+
+        .points-table tbody tr:hover {
+            background-color: #E8DCC9; /* Lighter tan on hover, interactive feel */
+            cursor: default; /* Indicates it's data, not a link */
+        }
+
+        /* Style for the last column (Points) to make it stand out */
+        .points-table th:last-child,
+        .points-table td:last-child {
+            font-weight: bold;
+            color: #556B2F; /* DarkOliveGreen, for a subtle 'positive' emphasis */
+        }
+
+        /* --- Navigation Link --- */
+        .navigation-links {
+            text-align: center;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+
+        .nav-button {
+            display: inline-block;
+            background-color: #7B5B3A; /* Muted Sienna Brown */
+            color: white !important;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-family: 'Lato', sans-serif;
+            font-size: 1em;
+            font-weight: bold;
+            text-decoration: none;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            border-bottom: 2px solid #5A3A22; /* Darker shade for depth */
+        }
+
+        .nav-button:hover {
+            background-color: #8B4513; /* SaddleBrown */
+            color: white !important;
+            text-decoration: none;
+            transform: translateY(-2px);
+        }
+
+        /* --- Footer --- */
+        .site-footer {
+            text-align: center;
+            padding: 1.5em 0;
+            margin-top: 3em;
+            background-color: #4A3B31; /* Dark Taupe */
+            color: #f4f1ea; /* Light text */
+            font-size: 0.9em;
+            border-top: 3px solid #8B4513; /* SaddleBrown */
+        }
+        .site-footer p {
+            margin: 0;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="page-title"><span class="season-name">{{ season }}</span> - Points Table</h1>
+
+        <div class="points-table-wrapper">
+            <table class="points-table">
+                <thead>
+                    <tr>
+                        {% for head in headers %}
+                            <th>{{ head }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if table %}
+                        {% for row in table %}
+                        <tr>
+                            {% for col in row %}
+                                <td>{{ col }}</td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="{{ headers|length }}" style="text-align: center; padding: 20px;">No data available for this table.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="navigation-links">
+            <a href="{{ url_for('index') }}" class="nav-button">Back to Seasons List</a>
+            {% if session.admin %}
+                 <a href="{{ url_for('update_scores', season=season) }}" class="nav-button" style="background-color: #556B2F; border-bottom-color: #3A4A1F;">Update Scores</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <footer class="site-footer">
+        <p>&copy; 2024 Football League Manager. Rustic Edition.</p>
+    </footer>
+
+</body>
+</html>
