@@ -1,86 +1,137 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, flash # Added flash
+from flask_sqlalchemy import SQLAlchemy
 import os
-import csv
-import shutil
-# import datetime # Not used in this minimal version if you don't add the context processor
+# import csv # No longer needed for primary data storage
+# import shutil # No longer needed for DATA_DIR management
+import datetime
 
 app = Flask(__name__)
-app.secret_key = 'secret123' # For Render, set this via Environment Variable if possible
 
-# --- Define BASE_DIR and DATA_DIR correctly for Render ---
-# Get the absolute path of the directory where app.py is located
-BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-DATA_DIR = os.path.join(BASE_DIR, 'season_data')
+# --- Database Configuration ---
+# Render will provide DATABASE_URL as an environment variable
+# For local development, you might set up a local Postgres DB or use SQLite
+# Example for local SQLite (easier to start with locally):
+# app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///league_data.db'
+# For Render (it will inject DATABASE_URL):
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///local_dev_league_data.db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False # Recommended
 
-# --- Ensure the DATA_DIR exists when the app starts ---
-# This is crucial for platforms like Render/Vercel
-try:
-    os.makedirs(DATA_DIR, exist_ok=True)
-except OSError:
-    # Handle or log the error if DATA_DIR creation fails,
-    # though exist_ok=True should prevent error if it already exists.
+# --- Secret Key ---
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'super_secret_dev_key_change_me')
+if app.secret_key == 'super_secret_dev_key_change_me' and app.env == 'production':
+    # print("WARNING: Using default FLASK_SECRET_KEY in production!", file=sys.stderr) # Requires import sys
     pass
 
-# --- Admin Credentials (Hardcoded as in original) ---
-ADMIN_USERNAME = 'admin'
-ADMIN_PASSWORD = 'password'
 
-# --- Helper Functions (Unchanged logic, but will now use the robust DATA_DIR) ---
-def get_seasons():
-    try:
-        # Check if DATA_DIR exists before trying to list its contents
-        if not os.path.isdir(DATA_DIR):
-            return [] # Return empty list ifDATA_DIR doesn't exist or is not a directory
-        return [d for d in os.listdir(DATA_DIR) if os.path.isdir(os.path.join(DATA_DIR, d))]
-    except FileNotFoundError: # Should be rare now with os.makedirs
-        return []
+db = SQLAlchemy(app)
 
-def get_fixture_file(season):
-    return os.path.join(DATA_DIR, season, 'fixtures.csv')
+# --- Admin Credentials (Use Environment Variables) ---
+ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin')
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'password')
 
-def generate_fixtures(teams):
-    fixtures = []
-    if len(teams) < 2:
-        return []
-    for i in range(len(teams)):
-        for j in range(len(teams)):
+# --- Database Models ---
+class Season(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False)
+    # Relationship to fixtures (one season has many fixtures)
+    fixtures = db.relationship('Fixture', backref='season_ref', lazy=True, cascade="all, delete-orphan")
+    # If you want to store teams per season distinctly
+    # teams = db.relationship('Team', backref='season', lazy=True)
+
+    def __repr__(self):
+        return f'<Season {self.name}>'
+
+class Team(db.Model): # You might not need a separate Team table if team names are just strings in Fixtures
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False)
+    # If you want to associate teams with seasons or fixtures, add relationships here
+
+    def __repr__(self):
+        return f'<Team {self.name}>'
+
+class Fixture(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    season_id = db.Column(db.Integer, db.ForeignKey('season.id'), nullable=False)
+    home_team_name = db.Column(db.String(100), nullable=False)
+    away_team_name = db.Column(db.String(100), nullable=False)
+    home_goals = db.Column(db.Integer, nullable=True) # Nullable if score is '-'
+    away_goals = db.Column(db.Integer, nullable=True) # Nullable if score is '-'
+
+    def __repr__(self):
+        return f'<Fixture {self.home_team_name} vs {self.away_team_name} in Season ID {self.season_id}>'
+
+
+# --- Context Processor for Current Year ---
+@app.context_processor
+def inject_current_year():
+    return {'current_year': datetime.datetime.utcnow().year}
+
+
+# --- Helper Functions (Rewritten for Database) ---
+def get_seasons_from_db():
+    seasons = Season.query.order_by(Season.name).all()
+    return [s.name for s in seasons]
+
+def generate_and_save_fixtures_db(season_name, team_names_list):
+    season = Season.query.filter_by(name=season_name).first()
+    if not season:
+        # This assumes create_season route first creates the Season object.
+        # Or, this function could create it if it doesn't exist.
+        # For simplicity now, let's assume 'season' object is passed or created before.
+        return False # Or raise an error
+
+    if len(team_names_list) < 2:
+        return False
+
+    existing_fixtures = Fixture.query.filter_by(season_id=season.id).all()
+    if existing_fixtures: # Avoid regenerating if fixtures exist for the season
+        # print(f"Fixtures already exist for season {season_name}")
+        return True
+
+    for i in range(len(team_names_list)):
+        for j in range(len(team_names_list)):
             if i != j:
-                fixtures.append([teams[i], teams[j], '-', '-'])
-    return fixtures
+                fixture = Fixture(
+                    season_id=season.id,
+                    home_team_name=team_names_list[i],
+                    away_team_name=team_names_list[j],
+                    home_goals=None, # Represent '-' as None in DB if integer type
+                    away_goals=None
+                )
+                db.session.add(fixture)
+    try:
+        db.session.commit()
+        return True
+    except Exception as e:
+        db.session.rollback()
+        # print(f"Error saving fixtures to DB: {e}")
+        return False
 
-def save_fixtures(season, fixtures):
-    season_path = os.path.join(DATA_DIR, season)
-    os.makedirs(season_path, exist_ok=True) # Ensure individual season directory also exists
-    with open(get_fixture_file(season), 'w', newline='') as f:
-        writer = csv.writer(f)
-        writer.writerows(fixtures)
 
-def load_fixtures(season):
-    path = get_fixture_file(season)
-    if os.path.exists(path):
-        with open(path, 'r') as f:
-            reader = csv.reader(f)
-            # Basic check for row structure, assuming 4 columns
-            loaded_data = []
-            for row in reader:
-                if row and len(row) == 4: # Only process non-empty rows with expected columns
-                    loaded_data.append([row[0], row[1], row[2], row[3]])
-                elif row: # If row exists but not 4 columns, maybe log or handle
-                    # print(f"Warning: Malformed row in {path}: {row}")
-                    pass
-            return loaded_data
-    return []
+def load_fixtures_from_db(season_name):
+    season = Season.query.filter_by(name=season_name).first()
+    if not season:
+        return []
+    fixtures_db = Fixture.query.filter_by(season_id=season.id).all()
+    # Convert to the list-of-lists format your `calculate_points` expects
+    fixtures_list = []
+    for fix in fixtures_db:
+        hg = fix.home_goals if fix.home_goals is not None else '-'
+        ag = fix.away_goals if fix.away_goals is not None else '-'
+        fixtures_list.append([fix.home_team_name, fix.away_team_name, str(hg), str(ag)])
+    return fixtures_list
 
-def calculate_points(fixtures):
+
+def calculate_points_db(fixtures_list_from_db): # This function's internal logic can remain similar
     points = {}
     all_teams_in_fixtures = set()
 
-    if not fixtures:
+    if not fixtures_list_from_db:
         return []
 
-    for fixture_row in fixtures:
+    for fixture_row in fixtures_list_from_db:
         if len(fixture_row) < 4:
-            continue 
+            continue
 
         home, away, hg_str, ag_str = fixture_row
         all_teams_in_fixtures.add(home)
@@ -119,7 +170,7 @@ def calculate_points(fixtures):
             points[away]['D'] += 1
             points[home]['Pts'] += 1
             points[away]['Pts'] += 1
-
+            
     for team_name in all_teams_in_fixtures:
         if team_name not in points:
              points[team_name] = {'P': 0, 'W': 0, 'D': 0, 'L': 0, 'GF': 0, 'GA': 0, 'Pts': 0}
@@ -127,137 +178,181 @@ def calculate_points(fixtures):
     table = []
     for team, stats in points.items():
         table.append([team] + [stats[k] for k in ['P', 'W', 'D', 'L', 'GF', 'GA', 'Pts']])
-    
-    # Original sort: by points, then name
-    table.sort(key=lambda x: (-x[-1], x[0]))
+    table.sort(key=lambda x: (-x[7], -(x[5] - x[6]), -x[5], x[0])) # Pts, GD, GF, Name
     return table
 
-# --- Flask Routes (Unchanged from your original, except for small non-functional comments where flash could go) ---
+
+# --- Flask Routes (Modified to use DB functions) ---
+
 @app.route('/')
 def index():
-    return render_template('index.html', seasons=get_seasons())
+    seasons = get_seasons_from_db()
+    return render_template('index.html', seasons=seasons)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        # Using .get() is safer to avoid KeyError if form field is missing
         submitted_username = request.form.get('username')
         submitted_password = request.form.get('password')
         if submitted_username == ADMIN_USERNAME and submitted_password == ADMIN_PASSWORD:
             session['admin'] = True
+            flash('Login successful!', 'success')
             return redirect(url_for('index'))
         else:
-            # For the "Invalid credentials" message to show on login page,
-            # login.html needs to be able to render an error message.
-            # And this route needs to pass that error when re-rendering.
-            # Original returned a plain string, keeping it similar:
-            return 'Invalid credentials' # Or: render_template('login.html', error="Invalid credentials")
+            flash('Invalid credentials. Please try again.', 'danger')
+            return render_template('login.html', error="Invalid credentials")
     return render_template('login.html')
 
 @app.route('/logout')
 def logout():
     session.pop('admin', None)
+    flash('You have been logged out.', 'info')
     return redirect(url_for('index'))
 
 @app.route('/create_season', methods=['GET', 'POST'])
 def create_season():
     if 'admin' not in session:
+        flash('Please log in to create a season.', 'warning')
         return redirect(url_for('login'))
+
     if request.method == 'POST':
         season_name = request.form.get('season_name', '').strip()
-        team_names = [name.strip() for name in request.form.getlist('team_names') if name.strip()]
+        team_names = list(set([name.strip() for name in request.form.getlist('team_names') if name.strip()])) # Unique, stripped
 
         if not season_name:
-            # Could render_template with error: 'Season name required'
-            return redirect(request.url) # Simple redirect back if error
+            flash('Season name cannot be empty.', 'danger')
+            return render_template('create_season.html', current_teams=team_names)
         if not team_names or len(team_names) < 2:
-            # Could render_template with error: 'At least 2 teams required'
-            return redirect(request.url) # Simple redirect back
+            flash('You must provide at least two unique team names.', 'danger')
+            return render_template('create_season.html', season_name=season_name, current_teams=team_names)
+        
+        if Season.query.filter_by(name=season_name).first():
+            flash(f"Season '{season_name}' already exists.", 'warning')
+            return render_template('create_season.html', season_name=season_name, current_teams=team_names)
 
-        # Basic check if season already exists (case-sensitive)
-        if season_name in get_seasons():
-            # Could render_template with error: 'Season already exists'
-            return redirect(request.url) # Simple redirect back
+        # Create new season in DB
+        new_season = Season(name=season_name)
+        db.session.add(new_season)
+        try:
+            db.session.commit() # Commit to get new_season.id
+            if generate_and_save_fixtures_db(new_season.name, team_names): # Pass season name
+                flash(f"Season '{season_name}' and its fixtures created successfully!", 'success')
+            else:
+                # If fixture generation failed, we might want to rollback season creation or notify.
+                # For now, assume it partly succeeded or needs attention.
+                flash(f"Season '{season_name}' created, but there was an issue generating fixtures.", 'warning')
+            return redirect(url_for('index'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error creating season '{season_name}': {e}", 'danger')
+            # print(f"DB Error creating season: {e}")
+            return render_template('create_season.html', season_name=season_name, current_teams=team_names)
 
-        fixtures = generate_fixtures(team_names)
-        if fixtures: # Only save if fixtures were generated
-            save_fixtures(season_name, fixtures)
-        return redirect(url_for('index'))
     return render_template('create_season.html')
 
-@app.route('/<season>/points')
-def points_table(season):
-    if season not in get_seasons(): # Basic check
+@app.route('/<season_name>/points')
+def points_table(season_name):
+    season = Season.query.filter_by(name=season_name).first()
+    if not season:
+        flash(f"Season '{season_name}' not found.", 'danger')
         return redirect(url_for('index'))
-    fixtures = load_fixtures(season)
-    table = calculate_points(fixtures)
-    headers = ['Team', 'Played', 'Won', 'Draw', 'Lost', 'GF', 'GA', 'Points']
-    return render_template('points_table.html', season=season, table=table, headers=headers)
+    
+    fixtures_list = load_fixtures_from_db(season_name)
+    table = calculate_points_db(fixtures_list)
+    headers = ['Team', 'P', 'W', 'D', 'L', 'GF', 'GA', 'Pts']
+    return render_template('points_table.html', season=season_name, table=table, headers=headers) # Pass season_name
 
-@app.route('/delete_season/<season>', methods=['POST'])
-def delete_season(season):
+@app.route('/delete_season/<season_name>', methods=['POST'])
+def delete_season(season_name):
     if 'admin' not in session:
+        flash('Admin access required.', 'danger')
         return redirect(url_for('login'))
     
-    season_path = os.path.join(DATA_DIR, season)
-    # Ensure it's a directory before trying to rmtree
-    if os.path.exists(season_path) and os.path.isdir(season_path):
+    season_to_delete = Season.query.filter_by(name=season_name).first()
+    if season_to_delete:
         try:
-            shutil.rmtree(season_path)
-        except OSError:
-            # Could log error or flash message
-            pass
+            # Fixtures will be cascade-deleted due to relationship setting
+            db.session.delete(season_to_delete)
+            db.session.commit()
+            flash(f"Season '{season_name}' and all its data deleted successfully.", 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error deleting season '{season_name}': {e}", 'danger')
+            # print(f"DB Error deleting season: {e}")
+    else:
+        flash(f"Season '{season_name}' not found.", 'warning')
             
     return redirect(url_for('index'))
 
-
-@app.route('/<season>/update', methods=['GET', 'POST'])
-def update_scores(season):
+@app.route('/<season_name>/update', methods=['GET', 'POST'])
+def update_scores(season_name):
     if 'admin' not in session:
+        flash('Admin access required.', 'danger')
         return redirect(url_for('login'))
-    if season not in get_seasons(): # Basic check
+
+    season = Season.query.filter_by(name=season_name).first()
+    if not season:
+        flash(f"Season '{season_name}' not found.", 'danger')
         return redirect(url_for('index'))
 
-    fixtures = load_fixtures(season)
+    # Get fixtures for the form (we need their IDs for updating specific ones)
+    db_fixtures_for_form = Fixture.query.filter_by(season_id=season.id).order_by(Fixture.id).all()
 
     if request.method == 'POST':
-        updated_fixtures = []
-        for i in range(len(fixtures)):
-            original_fixture_line = fixtures[i]
-            home_team = original_fixture_line[0]
-            away_team = original_fixture_line[1]
+        try:
+            for i, fix_db in enumerate(db_fixtures_for_form):
+                home_goals_str = request.form.get(f'home_goals_{i}', '').strip()
+                away_goals_str = request.form.get(f'away_goals_{i}', '').strip()
 
-            home_goals_str = request.form.get(f'home_goals_{i}', '').strip()
-            away_goals_str = request.form.get(f'away_goals_{i}', '').strip()
+                if home_goals_str == '':
+                    fix_db.home_goals = None
+                elif home_goals_str.isdigit():
+                    fix_db.home_goals = int(home_goals_str)
+                # Else: if not empty and not digit, do nothing to keep previous or raise error earlier
 
-            # Simplified logic from original: keep '-' if not digit, else convert to int, then back to str for saving.
-            # This assumes fixture[2] and fixture[3] always store strings.
-            hg = str(int(home_goals_str)) if home_goals_str.isdigit() else '-'
-            ag = str(int(away_goals_str)) if away_goals_str.isdigit() else '-'
-            
-            # A slight refinement from your original to ensure '-' if truly empty,
-            # otherwise use the new value (if digit) or keep original (if not digit and not cleared)
-            if home_goals_str == '':
-                hg = '-'
-            elif home_goals_str.isdigit():
-                hg = home_goals_str
-            else: # Not a digit and not empty, keep original score
-                hg = original_fixture_line[2]
+                if away_goals_str == '':
+                    fix_db.away_goals = None
+                elif away_goals_str.isdigit():
+                    fix_db.away_goals = int(away_goals_str)
+                # Else: if not empty and not digit, do nothing
 
-            if away_goals_str == '':
-                ag = '-'
-            elif away_goals_str.isdigit():
-                ag = away_goals_str
-            else: # Not a digit and not empty, keep original score
-                ag = original_fixture_line[3]
+            db.session.commit()
+            flash(f"Scores for season '{season_name}' updated successfully!", 'success')
+            return redirect(url_for('points_table', season_name=season_name)) # Pass season_name
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error updating scores: {e}", 'danger')
+            # print(f"DB Error updating scores: {e}")
+    
+    # Convert DB fixtures to list of lists for the template, if template expects that structure
+    # Or better, adapt the template to use the fixture objects directly
+    template_fixtures = []
+    for fix_db in db_fixtures_for_form:
+         hg = fix_db.home_goals if fix_db.home_goals is not None else '-'
+         ag = fix_db.away_goals if fix_db.away_goals is not None else '-'
+         template_fixtures.append({
+             'id': fix_db.id, # Send ID to template if needed for form field names
+             'home_team_name': fix_db.home_team_name,
+             'away_team_name': fix_db.away_team_name,
+             'home_goals': hg,
+             'away_goals': ag
+         })
 
-            updated_fixtures.append([home_team, away_team, hg, ag])
+    return render_template('update_scores.html', season=season_name, fixtures=template_fixtures) # Pass season_name
 
-        save_fixtures(season, updated_fixtures)
-        return redirect(url_for('points_table', season=season))
 
-    return render_template('update_scores.html', season=season, fixtures=fixtures)
+# Command to create database tables (run this once locally, or via Render shell, or in a startup script logic)
+# You can create a separate script for this or a Flask CLI command.
+# For Render, you might run this from the shell after the first deploy, or use migrations.
+# with app.app_context():
+# db.create_all()
+# print("Database tables created (if they didn't exist).")
 
 if __name__ == '__main__':
-    # os.makedirs(DATA_DIR, exist_ok=True) # This is now handled at the top, globally
-    app.run(debug=True)
+    # For local development with SQLite, this will create the DB file and tables
+    with app.app_context():
+        db.create_all()
+        print("Initialized the local SQLite database (if it didn't exist).")
+    app.run(debug=True, port=5001) # Use a different port to avoid conflicts if any
+
+
