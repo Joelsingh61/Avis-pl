@@ -40,11 +40,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False # Suppresses a Flask-SQLAlc
 # Initialize SQLAlchemy
 db = SQLAlchemy(app)
 
-# Admin Credentials (Should be set via Environment Variables in Render)
-ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin_fallback')
-ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'password_fallback')
-if ADMIN_USERNAME == 'admin_fallback' or ADMIN_PASSWORD == 'password_fallback':
-    print("WARNING: Using fallback admin credentials. Set ADMIN_USERNAME and ADMIN_PASSWORD environment variables.")
+ADMIN_USERNAME = 'admin'  # Your desired admin username
+ADMIN_PASSWORD = 'password' # Your desired admin password
 
 
 # --- Database Models ---
@@ -206,19 +203,20 @@ def index():
     return render_template('index.html', seasons=seasons)
 
 @app.route('/login', methods=['GET', 'POST'])
+@app.route('/login', methods=['GET', 'POST'])
 def login():
-    if 'admin' in session: # If already logged in, redirect to index
-        return redirect(url_for('index'))
     if request.method == 'POST':
         submitted_username = request.form.get('username')
         submitted_password = request.form.get('password')
+        # The comparison happens here:
         if submitted_username == ADMIN_USERNAME and submitted_password == ADMIN_PASSWORD:
             session['admin'] = True
-            flash('Login successful!', 'success')
+            flash('Login successful!', 'success') # If you are using flash messages
             return redirect(url_for('index'))
         else:
-            flash('Invalid username or password.', 'danger')
-            # No need to pass error to template if using flash
+            flash('Invalid username or password.', 'danger') # If you are using flash
+            # Or if not using flash, you might render with an error:
+            # return render_template('login.html', error="Invalid credentials")
     return render_template('login.html')
 
 @app.route('/logout')
