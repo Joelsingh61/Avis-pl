@@ -14,6 +14,8 @@ GITHUB_REPO = "Joelsingh61/Avis-pl"
 GITHUB_BRANCH = "main"
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 GITHUB_API = "https://api.github.com"
+GITHUB_API_URL = "https://api.github.com/repos/Joelsingh61/Avis-pl/contents/seasons"
+
 
 
 ADMIN_USERNAME = 'admin'
