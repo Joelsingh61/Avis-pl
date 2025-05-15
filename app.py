@@ -1,120 +1,118 @@
 from flask import Flask, render_template, request, redirect, url_for, session
-import os
-import csv
-import io
-import base64
-import requests
+from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 app.secret_key = 'secret123'
 
-# GitHub Configuration
+# PostgreSQL DB config - replace with your credentials
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://leaguedb_user:qNcmn4yYXfS3OvoJ4HwgEb6zGGVhUs5V@dpg-d0idtt95pdvs7384av40-a/leaguedb'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-GITHUB_REPO = "Joelsingh61/Avis-pl"  
-GITHUB_BRANCH = "main"
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
-GITHUB_API = "https://api.github.com"
-GITHUB_API_URL = "https://api.github.com/repos/Joelsingh61/Avis-pl/contents/seasons"
-# At the top of your app.py
-GITHUB_USERNAME = "Joelsingh61"
-GITHUB_REPO = "Avis-pl"
+db = SQLAlchemy(app)
 
+# Models
+class Season(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False)
+    teams = db.relationship('Team', backref='season', cascade="all, delete-orphan", lazy=True)
+    fixtures = db.relationship('Fixture', backref='season', cascade="all, delete-orphan", lazy=True)
 
+class Team(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    season_id = db.Column(db.Integer, db.ForeignKey('season.id'), nullable=False)
 
+class Fixture(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    season_id = db.Column(db.Integer, db.ForeignKey('season.id'), nullable=False)
+    home_team_id = db.Column(db.Integer, db.ForeignKey('team.id'), nullable=False)
+    away_team_id = db.Column(db.Integer, db.ForeignKey('team.id'), nullable=False)
+    home_goals = db.Column(db.Integer, nullable=True)
+    away_goals = db.Column(db.Integer, nullable=True)
 
+    home_team = db.relationship('Team', foreign_keys=[home_team_id])
+    away_team = db.relationship('Team', foreign_keys=[away_team_id])
+
+# Admin credentials
 ADMIN_USERNAME = 'admin'
 ADMIN_PASSWORD = 'password'
 
-def github_headers():
-    return {
-        'Authorization': f'token {GITHUB_TOKEN}',
-        'Accept': 'application/vnd.github.v3+json'
-    }
+@app.route('/')
+def index():
+    seasons = Season.query.all()
+    return render_template('index.html', seasons=seasons)
 
-def get_seasons():
-    r = requests.get(GITHUB_API_URL, headers=github_headers())
-    if r.status_code == 200:
-        return [item['name'] for item in r.json() if item['type'] == 'dir']
-    return []
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        if request.form['username'] == ADMIN_USERNAME and request.form['password'] == ADMIN_PASSWORD:
+            session['admin'] = True
+            return redirect(url_for('index'))
+        else:
+            return 'Invalid credentials', 401
+    return render_template('login.html')
 
-def get_fixture_file_path(season):
-    return f'season_data/{season}/fixtures.csv'
+@app.route('/logout')
+def logout():
+    session.pop('admin', None)
+    return redirect(url_for('index'))
 
-def get_fixture_file_url(season):
-    return f'{GITHUB_API_URL}/{season}/fixtures.csv'
+@app.route('/create_season', methods=['GET', 'POST'])
+def create_season():
+    if 'admin' not in session:
+        return redirect(url_for('login'))
+    if request.method == 'POST':
+        season_name = request.form['season_name'].strip()
+        team_names = [t.strip() for t in request.form.getlist('team_names') if t.strip()]
+        if not season_name or not team_names:
+            return "Season name and teams are required", 400
 
-def generate_fixtures(teams):
-    fixtures = []
-    for i in range(len(teams)):
-        for j in range(len(teams)):
-            if i != j:
-                fixtures.append([teams[i], teams[j], '-', '-'])
-    return fixtures
+        # Prevent duplicate seasons
+        if Season.query.filter_by(name=season_name).first():
+            return "Season already exists", 400
 
-def save_fixtures(season, fixtures):
-    # Prepare CSV content
-    output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerows(fixtures)
-    csv_content = output.getvalue()
+        season = Season(name=season_name)
+        db.session.add(season)
+        db.session.commit()
 
-    # Base64 encode
-    content_encoded = base64.b64encode(csv_content.encode()).decode()
+        # Add teams to the season
+        teams = []
+        for tn in team_names:
+            team = Team(name=tn, season=season)
+            db.session.add(team)
+            teams.append(team)
+        db.session.commit()
 
-    # Create season folder if not exists (we rely on GitHub structure only)
-    file_path = get_fixture_file_path(season)
-    url = f'https://api.github.com/repos/{GITHUB_USERNAME}/{GITHUB_REPO}/contents/{file_path}'
+        # Generate fixtures (every team plays each other once home and away)
+        for i in range(len(teams)):
+            for j in range(len(teams)):
+                if i != j:
+                    fixture = Fixture(season=season, home_team=teams[i], away_team=teams[j], home_goals=None, away_goals=None)
+                    db.session.add(fixture)
+        db.session.commit()
 
-    # Check if file exists to determine whether to PUT or POST
-    r = requests.get(url, headers=github_headers())
-    if r.status_code == 200:
-        sha = r.json()['sha']
-        data = {
-            "message": f"Update fixtures for {season}",
-            "content": content_encoded,
-            "sha": sha
-        }
-    else:
-        data = {
-            "message": f"Create fixtures for {season}",
-            "content": content_encoded
-        }
+        return redirect(url_for('index'))
+    return render_template('create_season.html')
 
-    requests.put(url, headers=github_headers(), json=data)
+@app.route('/<int:season_id>/points')
+def points_table(season_id):
+    season = Season.query.get_or_404(season_id)
+    fixtures = Fixture.query.filter_by(season_id=season.id).all()
 
-def load_fixtures(season):
-    url = get_fixture_file_url(season)
-    r = requests.get(url, headers=github_headers())
-    if r.status_code == 200:
-        content = base64.b64decode(r.json()['content']).decode()
-        reader = csv.reader(io.StringIO(content))
-        return [row for row in reader]
-    return []
-
-def delete_season_on_github(season):
-    url = f'{GITHUB_API_URL}/{season}'
-    r = requests.get(url, headers=github_headers())
-    if r.status_code == 200:
-        items = r.json()
-        for item in items:
-            delete_url = item['url']
-            sha = item['sha']
-            requests.delete(delete_url, headers=github_headers(), json={
-                'message': f'Delete {item["name"]}',
-                'sha': sha
-            })
-
-def calculate_points(fixtures):
     points = {}
-    for home, away, hg, ag in fixtures:
-        if hg == '-' or ag == '-':
+    for fixture in fixtures:
+        home = fixture.home_team.name
+        away = fixture.away_team.name
+        hg = fixture.home_goals
+        ag = fixture.away_goals
+
+        if home not in points:
+            points[home] = {'P':0, 'W':0, 'D':0, 'L':0, 'GF':0, 'GA':0, 'Pts':0}
+        if away not in points:
+            points[away] = {'P':0, 'W':0, 'D':0, 'L':0, 'GF':0, 'GA':0, 'Pts':0}
+
+        if hg is None or ag is None:
             continue
-
-        hg, ag = int(hg), int(ag)
-
-        for team in [home, away]:
-            if team not in points:
-                points[team] = {'P': 0, 'W': 0, 'D': 0, 'L': 0, 'GF': 0, 'GA': 0, 'Pts': 0}
 
         points[home]['P'] += 1
         points[away]['P'] += 1
@@ -137,97 +135,49 @@ def calculate_points(fixtures):
             points[home]['Pts'] += 1
             points[away]['Pts'] += 1
 
-    for home, away, _, _ in fixtures:
-        for team in [home, away]:
-            if team not in points:
-                points[team] = {'P': 0, 'W': 0, 'D': 0, 'L': 0, 'GF': 0, 'GA': 0, 'Pts': 0}
-
+    # Prepare sorted table
     table = []
     for team, stats in points.items():
-        table.append([team] + [stats[k] for k in ['P', 'W', 'D', 'L', 'GF', 'GA', 'Pts']])
-    table.sort(key=lambda x: (-x[-1], x[0]))
-    return table
+        table.append([team] + [stats[k] for k in ['P','W','D','L','GF','GA','Pts']])
+    table.sort(key=lambda x: (-x[-1], x[0]))  # sort by points desc, name asc
 
-@app.route('/')
-def index():
-    return render_template('index.html', seasons=get_seasons())
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        if request.form['username'] == ADMIN_USERNAME and request.form['password'] == ADMIN_PASSWORD:
-            session['admin'] = True
-            return redirect(url_for('index'))
-        else:
-            return 'Invalid credentials'
-    return render_template('login.html')
-
-@app.route('/logout')
-def logout():
-    session.pop('admin', None)
-    return redirect(url_for('index'))
-
-@app.route('/create_season', methods=['GET', 'POST'])
-def create_season():
-    if 'admin' not in session:
-        return redirect(url_for('login'))
-    if request.method == 'POST':
-        season = request.form.get('season_name')
-        team_names = request.form.getlist('team_names')
-        
-        print(f"[DEBUG] Received season: {season}")
-        print(f"[DEBUG] Received team names: {team_names}")
-        
-        if not season or not team_names:
-            print("[ERROR] Missing season name or team names")
-            return render_template('create_season.html', error="Please provide a season name and at least one team.")
-        
-        fixtures = generate_fixtures(team_names)
-        print(f"[DEBUG] Generated fixtures: {fixtures}")
-        
-        try:
-            save_fixtures(season, fixtures)
-        except Exception as e:
-            print(f"[ERROR] Could not save fixtures: {e}")
-            return render_template('create_season.html', error="Failed to save season fixtures. Please try again later.")
-        
-        return redirect(url_for('index'))
-    
-    return render_template('create_season.html')
-
-@app.route('/<season>/points')
-def points_table(season):
-    fixtures = load_fixtures(season)
-    table = calculate_points(fixtures)
     headers = ['Team', 'Played', 'Won', 'Draw', 'Lost', 'GF', 'GA', 'Points']
     return render_template('points_table.html', season=season, table=table, headers=headers)
 
-@app.route('/delete_season/<season>', methods=['POST'])
-def delete_season(season):
+@app.route('/delete_season/<int:season_id>', methods=['POST'])
+def delete_season(season_id):
     if 'admin' not in session:
         return redirect(url_for('login'))
-    delete_season_on_github(season)
+
+    season = Season.query.get_or_404(season_id)
+    db.session.delete(season)
+    db.session.commit()
+
     return redirect(url_for('index'))
 
-@app.route('/<season>/update', methods=['GET', 'POST'])
-def update_scores(season):
+@app.route('/<int:season_id>/update', methods=['GET', 'POST'])
+def update_scores(season_id):
     if 'admin' not in session:
         return redirect(url_for('login'))
 
-    fixtures = load_fixtures(season)
+    season = Season.query.get_or_404(season_id)
+    fixtures = Fixture.query.filter_by(season_id=season.id).all()
 
     if request.method == 'POST':
-        for i in range(len(fixtures)):
-            home_goals = request.form.get(f'home_goals_{i}', '').strip()
-            away_goals = request.form.get(f'away_goals_{i}', '').strip()
+        for fixture in fixtures:
+            home_goals = request.form.get(f'home_goals_{fixture.id}', '').strip()
+            away_goals = request.form.get(f'away_goals_{fixture.id}', '').strip()
 
-            fixtures[i][2] = int(home_goals) if home_goals.isdigit() else '-'
-            fixtures[i][3] = int(away_goals) if away_goals.isdigit() else '-'
+            fixture.home_goals = int(home_goals) if home_goals.isdigit() else None
+            fixture.away_goals = int(away_goals) if away_goals.isdigit() else None
 
-        save_fixtures(season, fixtures)
-        return redirect(url_for('points_table', season=season))
+        db.session.commit()
+        return redirect(url_for('points_table', season_id=season.id))
 
     return render_template('update_scores.html', season=season, fixtures=fixtures)
 
 if __name__ == '__main__':
+    # Create DB tables if they don't exist
+    with app.app_context():
+        db.create_all()
     app.run(debug=True)
