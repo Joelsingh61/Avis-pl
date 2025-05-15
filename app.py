@@ -15,6 +15,10 @@ GITHUB_BRANCH = "main"
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 GITHUB_API = "https://api.github.com"
 GITHUB_API_URL = "https://api.github.com/repos/Joelsingh61/Avis-pl/contents/seasons"
+# At the top of your app.py
+GITHUB_USERNAME = "Joelsingh61"
+GITHUB_REPO = "Avis-pl"
+
 
 
 
