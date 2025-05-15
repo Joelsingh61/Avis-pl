@@ -172,11 +172,27 @@ def create_season():
     if 'admin' not in session:
         return redirect(url_for('login'))
     if request.method == 'POST':
-        season = request.form['season_name']
+        season = request.form.get('season_name')
         team_names = request.form.getlist('team_names')
+        
+        print(f"[DEBUG] Received season: {season}")
+        print(f"[DEBUG] Received team names: {team_names}")
+        
+        if not season or not team_names:
+            print("[ERROR] Missing season name or team names")
+            return render_template('create_season.html', error="Please provide a season name and at least one team.")
+        
         fixtures = generate_fixtures(team_names)
-        save_fixtures(season, fixtures)
+        print(f"[DEBUG] Generated fixtures: {fixtures}")
+        
+        try:
+            save_fixtures(season, fixtures)
+        except Exception as e:
+            print(f"[ERROR] Could not save fixtures: {e}")
+            return render_template('create_season.html', error="Failed to save season fixtures. Please try again later.")
+        
         return redirect(url_for('index'))
+    
     return render_template('create_season.html')
 
 @app.route('/<season>/points')
